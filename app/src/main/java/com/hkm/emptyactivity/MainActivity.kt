@@ -4,44 +4,21 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.hkm.emptyactivity.ui.theme.EmptyActivityTheme
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.hkm.emptyactivity.ui.StarterApp
+import com.hkm.emptyactivity.ui.system.ApplySystemBarAppearance
+import com.hkm.emptyactivity.ui.theme.StarterTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            EmptyActivityTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+            val darkTheme = isSystemInDarkTheme()
+            StarterTheme(darkTheme = darkTheme) {
+                ApplySystemBarAppearance(darkTheme = darkTheme)
+                StarterApp()
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    EmptyActivityTheme {
-        Greeting("Android")
     }
 }
