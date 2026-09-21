@@ -1,102 +1,124 @@
 # Android Production Compose Starter
 
-A small Jetpack Compose baseline for coding agents that need to start from a reliable Android project instead of recreating Gradle and platform setup from scratch.
+The canonical, verified Jetpack Compose Empty Activity baseline for Android applications and autonomous coding agents.
 
-The included screen is a living reference, not a product template. It demonstrates the expected production behavior while keeping the project easy to replace with a real app.
+This starter provides a complete, modern Material 3 foundation with pre-configured edge-to-edge system bars, Nunito typography, tactile spring motion, subtle haptics, and a floating pill bottom navigation bar.
 
-## Clone and verify
+---
+
+## Quick Start & Verification
 
 ```bash
-git clone https://github.com/dev-hkm/android-empty-activity-starter.git
-cd android-empty-activity-starter
+# Clone the template
+git clone https://github.com/dev-hkm/android-empty-activity-starter.git <project-name>
+cd <project-name>
+
+# Build and verify unit tests
 ./gradlew testDebugUnitTest assembleDebug
 ```
 
-On Windows PowerShell, use `./gradlew.bat testDebugUnitTest assembleDebug`. If Java is not detected, point `JAVA_HOME` to the Android Studio JBR before running Gradle.
+On Windows:
+```powershell
+.\gradlew.bat testDebugUnitTest assembleDebug
+```
 
-## Agent instructions
+---
 
-When building a real app from this repository:
+## Mandatory Design Contract & Preferences
 
-1. Implement the product end to end. Do not ask the user to edit source files manually.
-2. Replace `app/src/main/java/com/hkm/emptyactivity/ui/StarterApp.kt` with the real screens and navigation.
-3. Keep and reuse the focused primitives under `ui/theme`, `ui/system`, `ui/motion`, `ui/haptics`, and `ui/components` when they fit the product.
-4. Rename the package, application ID, app label, theme, and starter-specific symbols for the real product.
-5. Replace every launcher icon layer with an original, app-specific mark.
-6. Run unit tests and `assembleDebug` after changes. Never report completion from source inspection alone.
+All coding agents (Hermes, Claude, Antigravity, etc.) implementing apps from this template **MUST strictly adhere to the following rules**:
 
-## Non-negotiable production contract
+### 1. Edge-to-Edge System Bars & Seamless Layout
+- **Status Bar & Navigation Bar Transparency**: Both the status bar and navigation bar must remain **100% transparent**, seamlessly blending with the app background without hard cuts, borders, or opaque strips.
+- **Top Padding Rule**: Compute top padding dynamically to accommodate the transparent status bar:
+  ```kotlin
+  val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp
+  ```
+- **Bottom Padding Rule**: Always supply bottom padding so content scrolls cleanly above the floating bottom navigation bar:
+  ```kotlin
+  val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 84.dp
+  ```
+- **No Double Padding / Top Gaps**: Never apply double insets (e.g., combining `WindowInsets.safeDrawing.only(Top)` with excessive manual spacers). The top content must start cleanly below the status bar icons.
 
-### System UI and layout
+### 2. Scrolling Header (Single Unified Background)
+- **Natural Scroll Integration**: Screen headers (Large Title + Subtitle or Mark) **must be placed inside the scrollable container** (`LazyColumn` or `Column` with `verticalScroll`), sharing the exact same background layer (`MaterialTheme.colorScheme.background`) as the rest of the screen.
+- **No Fixed Top Bars by Default**: When the user scrolls down, the header must scroll off-screen naturally with the content. Avoid pinned, boxed TopAppBars unless explicitly requested for sub-screens.
 
-- Render app surfaces edge to edge behind the status and navigation bars.
-- Keep system bars transparent and select light or dark system icons for the current theme.
-- Apply `WindowInsets.safeDrawing` at interactive content boundaries. Do not paint opaque strips across the top or bottom merely to avoid the system bars.
-- Account for gesture navigation, three-button navigation, display cutouts, landscape, and the software keyboard.
-- Backgrounds may extend behind system UI; tappable controls and essential text may not be clipped or obstructed.
+### 3. Floating Pill Bottom Navigation
+- **Pill Shape & Placement**: Use `FloatingPillBottomNav` (`ui/components/BottomNavBar.kt`), centered at `Alignment.BottomCenter` with `.navigationBarsPadding().padding(bottom = 12.dp)`.
+- **Hugging Content**: The pill is compact (`wrapContentWidth()`, `height(50.dp)`, `RoundedCornerShape(25.dp)`), semi-transparent (`surfaceContainer.copy(alpha = 0.94f)`), with a subtle outline border and soft elevation.
+- **Tactile Feedback**:
+  - Tactile spring scale bounce on tap (`0.88f` scale with `Spring.DampingRatioMediumBouncy`).
+  - Icon micro-bounce on selection (`1.12f` scale).
+  - Smooth spring horizontal label expansion.
+  - Automatically triggers `HapticUtil.selectionTick(context)`.
 
-### Material 3 and color
+### 4. Subtle & Semantic Haptic Feedback
+- **Zero Heavy Vibrations**: **Strictly avoid** harsh, jarring, loud, or multi-pulse vibrations (e.g., 2-3 heavy buzzes).
+- **Use `HapticUtil` (`util/HapticUtil.kt`)**:
+  - `HapticUtil.selectionTick(context)`: Ultra-gentle 3ms / amplitude 20 tick for tab changes, chips, and selections.
+  - `HapticUtil.toggle(context)`: Crisp 5ms / amplitude 35 tick for switches and checkboxes.
+  - `HapticUtil.actionConfirm(context)`: Subtle 12ms click for button taps and save/submit actions.
+  - `HapticUtil.success(context)`: Gentle 15ms click for completed operations.
 
-- Use Material 3 Compose components and theme tokens.
-- Support Android 12+ dynamic color in both light and dark mode.
-- Maintain intentional light and dark fallback schemes for older Android releases.
-- Do not hard-code product colors inside reusable components. Read them from `MaterialTheme.colorScheme`.
-- Keep typography, corner radius, spacing, elevation, and touch targets internally consistent.
+### 5. Typography: Universal Nunito Font
+- **Nunito Font Family**: All 15 Material 3 typography tokens (`displayLarge` down to `labelSmall`) are mapped to `NunitoFontFamily` (`ui/theme/Type.kt`).
+- **Font Files**: Embedded in `res/font/` (`nunito_regular.ttf`, `nunito_semibold.ttf`, `nunito_extrabold.ttf`). Never revert to generic system sans-serif.
 
-### Motion
+### 6. Theme: Light / Dark Mode & Contrast Safeguards
+- **Monet Dynamic Color (Android 12+)**: Dynamically samples wallpaper hues with built-in luminance safeguards (`Theme.kt`) to eliminate OEM Monet contrast inversion bugs.
+- **Fallback Schemes**: Carefully balanced Light and Dark palettes for older Android versions or disabled dynamic color.
+- **Default Language**: English is always the default language in `res/values/strings.xml`.
 
-- Fade animations are forbidden, including default transitions that quietly introduce a fade.
-- Blur effects are forbidden.
-- Prefer spring, slide, scale, expand, shrink, bounds, shape, color, and elevation transitions.
-- Make navigation spatially understandable and give every state change an intentional response.
-- Keep frequent micro-interactions quick. Do not animate continuously without a functional reason.
-- Use Compose animation APIs so the platform animator-duration accessibility setting remains respected.
+### 7. Icons: Vector Only (Strictly No Emojis)
+- **Zero Emojis**: Emojis are **strictly forbidden** in UI text, titles, buttons, badges, and icon substitutes.
+- **Vector Icons**: Use Material Outlined icons or `LucideIconMap` (`ui/components/LucideIconMap.kt`) for crisp, professional 1.5-2dp vector strokes matching Lucide design standards.
 
-### Haptics
+### 8. Motion: Slide Transitions Only (No Fade, No Blur)
+- **Fade Transitions Forbidden**: `fadeIn()` and `fadeOut()` are strictly forbidden across screens and major state changes.
+- **Blur Effects Forbidden**: Blur filters and backdrop blurs are forbidden for performance and visual clarity.
+- **Slide Transitions**: Use `StarterMotion.horizontalSlideEnter` and `StarterMotion.horizontalSlideExit` (`ui/motion/Motion.kt`) for clean, responsive directional sliding.
 
-- Use semantic intents from `ui/haptics/Haptics.kt`: selection, confirm, reject, and long press.
-- Trigger haptics when an action commits or meaningfully changes state.
-- Do not vibrate during normal scrolling or repeatedly on every frame of a drag.
-- Prefer platform haptic feedback. Do not request vibration permission for ordinary UI feedback.
+---
 
-### Icons and visual language
+## Project Structure
 
-- Emoji are forbidden in UI text, resources, sample data, and icon substitutes.
-- Use original vector artwork or a consistent professional icon library.
-- Every derived app needs an adaptive launcher icon with foreground, background, and monochrome layers.
-- The monochrome layer enables Android 13+ themed icons to follow the user's system palette.
-- Keep the meaningful foreground artwork inside the adaptive icon safe zone. It must not look tiny, touch the mask edge, or become unrecognizable under circular and rounded-square masks.
-- The starter mark is deliberately neutral. Do not ship it as the identity of a derived app.
+```
+app/src/main/
+├── java/com/hkm/emptyactivity/
+│   ├── MainActivity.kt                # Edge-to-edge activity entry point
+│   ├── ui/
+│   │   ├── StarterApp.kt              # Main multi-tab showcase with scrolling header
+│   │   ├── components/
+│   │   │   ├── BottomNavBar.kt        # FloatingPillBottomNav (Pozix style)
+│   │   │   ├── LucideIconMap.kt       # Vector icon resolver (zero emojis)
+│   │   │   ├── TactileButton.kt       # Spring-scale tactile button
+│   │   │   └── TactileSegmentedControl.kt # Sliding segmented button
+│   │   ├── motion/
+│   │   │   └── Motion.kt              # Slide & spring motion tokens (no fade, no blur)
+│   │   ├── system/
+│   │   │   └── EdgeToEdge.kt          # Transparent system bars controller
+│   │   └── theme/
+│   │       ├── Color.kt               # Expressive Light/Dark color tokens
+│   │       ├── Theme.kt               # Monet harmonization & M3 theme
+│   │       └── Type.kt                # Nunito typography definition
+│   └── util/
+│       └── HapticUtil.kt              # Subtle, non-intrusive haptic feedback
+└── res/
+    ├── font/                          # Nunito font family (regular, semibold, extrabold)
+    └── values/
+        └── strings.xml                # English base strings
+```
 
-### Interaction quality and accessibility
+---
 
-- Every tappable element needs visible pressed feedback and a minimum 48 dp touch target.
-- Use subtle haptics and motion together; neither should overwhelm the action.
-- Add meaningful content descriptions for non-text controls and preserve correct semantic roles and selected states.
-- Check layouts with larger font sizes and long text. Avoid fixed heights around text content.
-- Preserve sufficient contrast in dynamic, fallback light, and fallback dark color schemes.
+## Before Submitting Any New App
 
-## What the starter demonstrates
-
-- `MainActivity.kt`: minimal activity and edge-to-edge entry point.
-- `ui/system/EdgeToEdge.kt`: transparent system bars with correct icon contrast.
-- `ui/theme`: dynamic color plus complete light and dark fallbacks.
-- `ui/motion/Motion.kt`: shared non-fade spatial motion tokens.
-- `ui/haptics/Haptics.kt`: API-safe semantic feedback.
-- `ui/components`: tactile reusable controls with press and selection responses.
-- `ui/StarterApp.kt`: replaceable single-screen showcase using safe insets.
-- Launcher resources: adaptive foreground/background plus a dedicated monochrome layer.
-
-## Before delivery
-
-- Test light, dark, and dynamic color modes.
-- Test gesture and three-button navigation.
-- Test a device with a display cutout and a small screen.
-- Test large font scale and the software keyboard.
-- Verify every state transition without fade or blur.
-- Verify haptics feel intentional and are not repeated excessively.
-- Inspect adaptive icon previews under common launcher masks and themed icon mode.
-- Scan tracked files for credentials and machine-specific paths.
-- Run `./gradlew clean testDebugUnitTest assembleDebug` and require `BUILD SUCCESSFUL`.
-
-Design rationale and the implementation plan are stored under `docs/superpowers` for agents that need deeper context.
+1. Replace `StarterApp.kt` with your product screens while retaining the architectural primitives.
+2. Verify that the status bar and navigation bar remain transparent throughout all screens.
+3. Ensure headers are integrated into scrolling views and move naturally with content.
+4. Ensure all icons are vectors and zero emojis exist in the UI.
+5. Verify tests and build:
+   ```bash
+   ./gradlew clean testDebugUnitTest assembleDebug
+   ```
